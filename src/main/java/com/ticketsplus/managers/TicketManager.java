@@ -1,10 +1,11 @@
 package com.ticketsplus.managers;
 
 import com.ticketsplus.TicketsPlus;
-import com.ticketsplus.events.custom.TicketCreatedEvent;
+import com.ticketsplus.events.custom.TicketUpdateEvent;
 import com.ticketsplus.inventory.CustomHolder;
 import com.ticketsplus.inventory.Icon;
 import com.ticketsplus.obj.Ticket;
+import com.ticketsplus.obj.UpdateType;
 import com.ticketsplus.utilities.StringUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
@@ -41,33 +42,47 @@ public class TicketManager {
 
         ticketCache.add(ticket);
 
-        Bukkit.getServer().getPluginManager().callEvent(new TicketCreatedEvent(ticket));
+        Bukkit.getServer().getPluginManager().callEvent(new TicketUpdateEvent(ticket, UpdateType.OPEN));
 
     }
 
     /**
-     * Remove the ticket from the cache, and also try and remove from Database.
+     * Delete the ticket from the cache, and also try and remove from Database.
      * @param ticket the ticket to be removed
      * @return completion of ticket removal
      */
-    private boolean removeTicket(Ticket ticket, boolean force){
+    public boolean deleteTicket(Ticket ticket, boolean force){
 
         if (ticketCache == null){
-            Bukkit.getLogger().log(Level.SEVERE, "TM-RT - Cache null.");
+            Bukkit.getLogger().log(Level.SEVERE, "TM-DT - Cache null.");
             return false;
         }
 
         Ticket tempTicket = ticketCache.stream().filter(t -> t.getID().equals(ticket.getID())).findFirst().orElse(null);
 
-        if (tempTicket == null) { return false; }
+        if (tempTicket == null) {
+            Bukkit.getLogger().log(Level.SEVERE, "TM-DT - Unable to delete ticket ID - " + ticket.getID());
+            return false;
+        }
 
         if (force){
             ticketCache.remove(ticket);
+            /**
+             * Todo: Remove from Database.
+             */
         } else {
             ticket.setCurrentStatus(2);
         }
 
         return true;
+    }
+
+    /**
+     * Database transfer method.
+     * @param ticket the ticket to upload to database.
+     */
+    private void uploadTicket(Ticket ticket) {
+
     }
 
     /**
@@ -77,43 +92,42 @@ public class TicketManager {
 
         if (plugin != null) {
 
-            if (ticketCache != null && !ticketCache.isEmpty()) {
-
                 this.bukkitRunnable = plugin.getServer().getScheduler().scheduleSyncRepeatingTask(plugin, () -> {
 
-                    long currentTime = System.currentTimeMillis();
-                    int success = 0, failure = 0, total;
+                    if (ticketCache != null && !ticketCache.isEmpty()) {
 
-                    for (Ticket ticket : plugin.getTicketManager().ticketCache) {
+                        long currentTime = System.currentTimeMillis();
+                        int success = 0, failure = 0, total;
 
-                        try {
+                        for (Ticket ticket : plugin.getTicketManager().ticketCache) {
 
-                            uploadTicket(ticket);
-                            success++;
+                            try {
 
-                        } catch (Exception e) {
+                                uploadTicket(ticket);
+                                success++;
 
-                            Bukkit.getLogger().log(Level.SEVERE, "TM-SR - Ticket failed to upload.");
-                            Bukkit.getLogger().log(Level.SEVERE, "TM-SR - Use /ticket debug " + ticket.getID());
-                            Bukkit.getLogger().log(Level.SEVERE, e.getCause().toString());
-                            failure++;
+                            } catch (Exception e) {
 
+                                Bukkit.getLogger().log(Level.SEVERE, "TM-SR - Ticket failed to upload.");
+                                Bukkit.getLogger().log(Level.SEVERE, "TM-SR - Use /ticket debug " + ticket.getID());
+                                Bukkit.getLogger().log(Level.SEVERE, e.getCause().toString());
+                                failure++;
+
+                            }
                         }
+
+                        total = success + failure;
+                        Bukkit.getLogger().log(failure > 0 ? Level.SEVERE : Level.INFO,
+                                "Ticket DB Transfer Status - Success: " + success + "/" + total + ". Failure: " + failure + "/" + total);
+                        Bukkit.getLogger().log(Level.INFO, "Completed transfer in: " + (currentTime - System.currentTimeMillis()) + "ms!");
+
+                    } else {
+
+                        Bukkit.getLogger().log(Level.INFO, "There were 0 tickets submitted on this wave.");
+
                     }
 
-                    total = success + failure;
-                    Bukkit.getLogger().log(failure > 0 ? Level.SEVERE : Level.INFO,
-                            "Ticket DB Transfer Status - Success: " + success + "/" + total + ". Failure: " + failure + "/" + total);
-                    Bukkit.getLogger().log(Level.INFO, "Completed transfer in: " + (currentTime - System.currentTimeMillis()) + "ms!");
-
                 }, 0L, 60 * 20 * plugin.getConfig().getInt("cache-to-database-minutes"));
-
-
-            } else {
-
-                Bukkit.getLogger().log(Level.INFO, "There were 0 tickets submitted on this wave.");
-
-            }
         }
     }
 
@@ -122,21 +136,12 @@ public class TicketManager {
      * @param restart true to have the runnable start again.
      */
     private void cancelRunnable(boolean restart) {
-
-        if (Bukkit.getScheduler().isCurrentlyRunning(bukkitRunnable) && bukkitRunnable != -1) {
+        if (Bukkit.getScheduler().isCurrentlyRunning(bukkitRunnable)) {
             Bukkit.getScheduler().cancelTask(bukkitRunnable);
             if (restart) {
                 startRunnable();
             }
         }
-    }
-
-    /**
-     * Database transfer method.
-     * @param ticket the ticket to upload to database.
-     */
-    private void uploadTicket(Ticket ticket) {
-
     }
 
     /**
@@ -167,6 +172,17 @@ public class TicketManager {
         return null;
     }
 
+    /**
+     * Uses both search methods to find a ticket in the cache, and/or database.
+     * @param uid the uid of the ticket
+     * @param player the player who created the ticket
+     * @return returns the ticket found if not null
+     */
+    public Ticket search(String uid, Player player) {
+        Ticket uidTicket = findTicket(uid);
+        if (uidTicket != null) return uidTicket;
+        return findTicket(player);
+    }
     /**
      * Open the inventory to view a ticket.
      * @param player the player to open the inventory.
@@ -220,10 +236,11 @@ public class TicketManager {
 
             p.closeInventory();
             this.openTicketInventory(p, ticket);
-            ticket.setAssignee(p.getName(), p.getUniqueId());
+            ticket.setAssignee(p);
 
-            Objects.requireNonNull(Bukkit.getPlayer(ticket.getPlayerUUID())).sendMessage(StringUtils.color("&7[&cTicket&7] &f" + p.getName() + " has been assigned to your ticket!"));
-
+            if (ticket.isPlayerOnline()) {
+                Objects.requireNonNull(Bukkit.getPlayer(ticket.getPlayerUUID())).sendMessage(StringUtils.color("&7[&cTicket&7] &f" + p.getName() + " has been assigned to your ticket!"));
+            }
         });
 
         /* Sun Dial [ Date ] */
@@ -290,11 +307,13 @@ public class TicketManager {
 
                 pl.sendMessage(StringUtils.color("&7[&cTicket&7] &fYou've closed your own ticket!"));
 
-                removeTicket(ticket, true);
+                deleteTicket(ticket, true);
+
+                Bukkit.getServer().getPluginManager().callEvent(new TicketUpdateEvent(ticket, UpdateType.CLOSED));
 
             } else {
 
-                announce("&7[&cTicket&7] &f" + pl.getName() + " has closed " + ticket.getPlayerName() + "'s ticket!");
+                Bukkit.getServer().getPluginManager().callEvent(new TicketUpdateEvent(ticket, UpdateType.DELETED));
 
                 ticket.addComment("Ticket closed by: " + player.getName());
 
@@ -322,14 +341,6 @@ public class TicketManager {
         customHolder.setIcon(5, denyIcon);
 
         player.openInventory(customHolder.getInventory());
-    }
-
-    private void announce(String message){
-        for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
-            if (onlinePlayer.hasPermission("ticket.notify.all") && !plugin.getPlayerManager().getPlayerList().contains(onlinePlayer.getUniqueId())) {
-                onlinePlayer.sendMessage(StringUtils.color(message));
-            }
-        }
     }
 
     public List<Ticket> getTicketCache() {

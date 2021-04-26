@@ -3,6 +3,7 @@ package com.ticketsplus;
 import com.ticketsplus.commands.CommandHandler;
 import com.ticketsplus.events.listeners.JoinEvent;
 import com.ticketsplus.events.listeners.TicketCreatedEvent;
+import com.ticketsplus.events.listeners.TicketUpdateEvent;
 import com.ticketsplus.managers.PlayerManager;
 import com.ticketsplus.managers.TicketManager;
 import org.bukkit.Bukkit;
@@ -57,6 +58,7 @@ public class TicketsPlus extends JavaPlugin {
         PluginManager pluginManager = Bukkit.getPluginManager();
 
         pluginManager.registerEvents(new TicketCreatedEvent(this), this);
+        pluginManager.registerEvents(new TicketUpdateEvent(this), this);
         pluginManager.registerEvents(new JoinEvent(this), this);
 
     }

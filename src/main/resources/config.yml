@@ -1,0 +1,4 @@
+# How many minutes inbetween local storage to database transfers.
+cache-to-database-minutes: 5
+# How many days until database removes a closed ticket.
+database-clearance: 1

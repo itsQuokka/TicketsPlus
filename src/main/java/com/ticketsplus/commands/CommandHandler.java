@@ -24,6 +24,8 @@ public class CommandHandler implements org.bukkit.command.CommandExecutor {
         commands.put("status", new T_Status(plugin));
         commands.put("debug", new T_Debug(plugin));
         commands.put("info", new T_Info(plugin));
+        commands.put("claim", new T_Claim(plugin));
+        commands.put("delete", new T_ForceDelete(plugin));
     }
 
     @Override

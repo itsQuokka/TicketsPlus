@@ -1,0 +1,36 @@
+name: TicketsPlus
+version: ${project.version}
+main: com.ticketsplus.TicketsPlus
+api-version: 1.13
+authors: [Quokka]
+description: The final Tickets plugin.
+
+commands:
+  ticket:
+
+permissions:
+  ticket.admin.*:
+    children:
+      - ticket.staff.*
+      - ticket.notify
+      - ticket.notifytoggle
+      - ticket.debug
+      - ticket.notify.all
+      - ticket.forcedelete
+  ticket.staff.*:
+    children:
+      - ticket.notify
+      - ticket.assign
+      - ticket.teleport
+  ticket.notify.all:
+    description: Recieve all ticket notifications.
+  ticket.notify:
+    description: Recieve ticket creation notifications.
+  ticket.notifytoggle:
+    description: Toggle notifications to be off.
+  ticket.debug:
+    description: Debug a ticket to check for faults.
+  ticket.assign:
+    description: Assign yourself to a ticket.
+  ticket.teleport:
+    description: Teleport to a ticket location through GUI.

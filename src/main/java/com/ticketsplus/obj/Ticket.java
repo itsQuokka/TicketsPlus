@@ -1,5 +1,6 @@
 package com.ticketsplus.obj;
 
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
 
@@ -7,6 +8,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 public class Ticket {
@@ -41,9 +43,9 @@ public class Ticket {
         this.ticketStatus = 0;
     }
 
-    public void setAssignee(String name, UUID uuid){
-        this.assignedName = name;
-        this.assignedUUID = uuid;
+    public void setAssignee(Player player){
+        this.assignedName = player.getName();
+        this.assignedUUID = player.getUniqueId();
 
         this.ticketStatus = 1;
     }
@@ -82,6 +84,12 @@ public class Ticket {
 
     public List<String> getComments() {
         return comments;
+    }
+
+    public boolean hasAssignee() { return assignedUUID != null; }
+
+    public boolean isPlayerOnline() {
+        return Objects.requireNonNull(Bukkit.getPlayer(this.playerUUID)).isOnline();
     }
 
     /* Utility Methods */
