@@ -12,16 +12,16 @@ import org.bukkit.entity.Player;
 
 import java.util.Objects;
 
-public class T_Claim extends CommandExecutor {
+public class T_Close extends CommandExecutor {
 
     private TicketsPlus plugin;
-    public T_Claim(TicketsPlus plugin) {
+    public T_Close(TicketsPlus plugin) {
         this.plugin = plugin;
 
-        this.setCommand("claim");
-        this.setPermission("ticket.claim");
+        this.setCommand("close");
+        this.setPermission("ticket.close");
         this.setLength(2);
-        this.setUsage("/ticket claim <id>");
+        this.setUsage("/ticket close <id>");
     }
 
     @Override
@@ -37,33 +37,32 @@ public class T_Claim extends CommandExecutor {
         }
 
         if (ticket.getCurrentStatus().equalsIgnoreCase("closed")) {
-            player.sendMessage(StringUtils.color("&7[&cTicket&7] &fThat ticket seems to have been closed!"));
+            player.sendMessage(StringUtils.color("&7[&cTicket&7] &fThat ticket seems to already have been closed!"));
             return;
         }
 
         if (ticket.hasAssignee()){
-            if (ticket.getAssignedUUID().equals(player.getUniqueId())) {
-                player.sendMessage(StringUtils.color("&7[&cTicket&7] &fYou're already assigned to that ticket!"));
-                return;
+            if (!player.hasPermission("ticket.close.override")) {
+                if (!ticket.getAssignedUUID().equals(player.getUniqueId())) {
+                    player.sendMessage(StringUtils.color("&7[&cTicket&7] &fThat ticket can only be closed by: " + ticket.getAssignedName()));
+                    return;
+                }
             }
-            if (player.hasPermission("ticket.claim.override"))
-            player.sendMessage(StringUtils.color("&7[&cTicket&7] &fThat ticket already has an assignee!"));
-            return;
         }
 
         if (ticket.isPlayerOnline()) {
             Objects.requireNonNull(Bukkit.getPlayer(ticket.getPlayerUUID())).sendMessage(StringUtils.color(
-                    "&7[&cTicket&7] &fYour ticket has been updated! Check with &c/ticket status&f!"));
+                    "&7[&cTicket&7] &fYour ticket has been closed by &c"  + player.getName() + "&f!"));
         }
 
         // Required to be first in order to process correct ticket event.
-        ticket.setAssignee(player);
+        ticket.setCurrentStatus(2);
 
-        Bukkit.getServer().getPluginManager().callEvent(new TicketUpdateEvent(ticket, UpdateType.ASSIGNED));
+        Bukkit.getServer().getPluginManager().callEvent(new TicketUpdateEvent(ticket, UpdateType.CLOSED));
 
-        ticket.addStaffNote(StringUtils.color("&f" + ticket.getDate() + " - &c" + player.getName() + "&f claimed the ticket."));
+        ticket.addStaffNote(StringUtils.color("&f" + ticket.getDate() + " - &c" + player.getName() + "&f closed the ticket."));
 
-        player.sendMessage(StringUtils.color("&7[&cTicket&7] &fYou've been assigned yourself to &c" + ticket.getPlayerName() + "&f's ticket!"));
+        player.sendMessage(StringUtils.color("&7[&cTicket&7] &fYou've closed &c" + ticket.getPlayerName() + "&f's ticket!"));
 
     }
 }

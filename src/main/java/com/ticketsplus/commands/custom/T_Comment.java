@@ -12,16 +12,14 @@ import org.bukkit.entity.Player;
 
 import java.util.Objects;
 
-public class T_Claim extends CommandExecutor {
+public class T_Comment extends CommandExecutor {
 
     private TicketsPlus plugin;
-    public T_Claim(TicketsPlus plugin) {
+    public T_Comment(TicketsPlus plugin) {
         this.plugin = plugin;
-
-        this.setCommand("claim");
-        this.setPermission("ticket.claim");
-        this.setLength(2);
-        this.setUsage("/ticket claim <id>");
+        this.setCommand("comment");
+        this.setPermission("ticket.comment");
+        this.setUsage("/ticket comment <id> <message>");
     }
 
     @Override
@@ -41,29 +39,36 @@ public class T_Claim extends CommandExecutor {
             return;
         }
 
-        if (ticket.hasAssignee()){
-            if (ticket.getAssignedUUID().equals(player.getUniqueId())) {
-                player.sendMessage(StringUtils.color("&7[&cTicket&7] &fYou're already assigned to that ticket!"));
-                return;
+        if (!player.hasPermission("ticket.comment.override")) {
+            if (ticket.hasAssignee()) {
+                if (!ticket.getAssignedUUID().equals(player.getUniqueId())) {
+                    player.sendMessage(StringUtils.color("&7[&cTicket&7] &fYou are not assigned to that ticket!"));
+                    return;
+                }
             }
-            if (player.hasPermission("ticket.claim.override"))
-            player.sendMessage(StringUtils.color("&7[&cTicket&7] &fThat ticket already has an assignee!"));
-            return;
+        }
+
+        StringBuilder stringBuilder = new StringBuilder();
+        for (int i = 2; i < args.length; i++){
+            stringBuilder.append(args[i] + ' ');
         }
 
         if (ticket.isPlayerOnline()) {
+
             Objects.requireNonNull(Bukkit.getPlayer(ticket.getPlayerUUID())).sendMessage(StringUtils.color(
                     "&7[&cTicket&7] &fYour ticket has been updated! Check with &c/ticket status&f!"));
         }
 
         // Required to be first in order to process correct ticket event.
-        ticket.setAssignee(player);
+        ticket.addComment(StringUtils.color("&c" + player.getName() + " &f- &c" + ticket.getDate()));
 
-        Bukkit.getServer().getPluginManager().callEvent(new TicketUpdateEvent(ticket, UpdateType.ASSIGNED));
+        ticket.addComment(StringUtils.color("&f" + stringBuilder.toString()));
 
-        ticket.addStaffNote(StringUtils.color("&f" + ticket.getDate() + " - &c" + player.getName() + "&f claimed the ticket."));
+        ticket.addStaffNote(StringUtils.color("&f" + ticket.getDate() + " - &c" + player.getName() + "&f commented on ticket."));
 
-        player.sendMessage(StringUtils.color("&7[&cTicket&7] &fYou've been assigned yourself to &c" + ticket.getPlayerName() + "&f's ticket!"));
+        Bukkit.getServer().getPluginManager().callEvent(new TicketUpdateEvent(ticket, UpdateType.COMMENT));
+
+        player.sendMessage(StringUtils.color("&7[&cTicket&7] &fSuccessfully added a comment to the ticket!"));
 
     }
 }

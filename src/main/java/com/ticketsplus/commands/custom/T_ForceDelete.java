@@ -37,16 +37,16 @@ public class T_ForceDelete extends CommandExecutor {
         }
 
         if (ticket.isPlayerOnline()) {
-
-            Objects.requireNonNull(Bukkit.getPlayer(ticket.getPlayerUUID())).sendMessage(
-                    StringUtils.color("&7[&cTicket&7] &fYour ticket has been deleted by: " + player.getName() + "!"));
+            Objects.requireNonNull(Bukkit.getPlayer(ticket.getPlayerUUID())).sendMessage(StringUtils.color(
+                    "&7[&cTicket&7] &fYour ticket has been deleted and closed!"));
         }
 
+        // Required to be first while ticket is not null.
         Bukkit.getServer().getPluginManager().callEvent(new TicketUpdateEvent(ticket, UpdateType.DELETED));
 
         plugin.getTicketManager().deleteTicket(ticket, true);
 
-        player.sendMessage(StringUtils.color("&7[&cTicket&7] &fYou've forcefully deleted " + ticket.getPlayerName() + "'s ticket!"));
+        player.sendMessage(StringUtils.color("&7[&cTicket&7] &fYou've forcefully deleted &c" + ticket.getPlayerName() + "&f's ticket!"));
 
     }
 }

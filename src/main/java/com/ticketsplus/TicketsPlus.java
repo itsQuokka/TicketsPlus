@@ -1,6 +1,7 @@
 package com.ticketsplus;
 
 import com.ticketsplus.commands.CommandHandler;
+import com.ticketsplus.events.listeners.InventoryClick;
 import com.ticketsplus.events.listeners.JoinEvent;
 import com.ticketsplus.events.listeners.TicketCreatedEvent;
 import com.ticketsplus.events.listeners.TicketUpdateEvent;
@@ -60,6 +61,7 @@ public class TicketsPlus extends JavaPlugin {
         pluginManager.registerEvents(new TicketCreatedEvent(this), this);
         pluginManager.registerEvents(new TicketUpdateEvent(this), this);
         pluginManager.registerEvents(new JoinEvent(this), this);
+        pluginManager.registerEvents(new InventoryClick(), this);
 
     }
 

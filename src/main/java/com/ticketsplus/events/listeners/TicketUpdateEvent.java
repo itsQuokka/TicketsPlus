@@ -34,19 +34,22 @@ public class TicketUpdateEvent implements Listener {
         String message = "";
         switch (updateType) {
             case OPEN:
-                message = "&7[&cTicket&7] &f" + ticket.getPlayerName() + " has created a ticket. #" + ticket.getID();
+                message = "&7[&cTicket&7] &c" + ticket.getPlayerName() + " &fhas created a ticket. #&c" + ticket.getID() + "&f!";
                 break;
             case CLOSED:
-                message = "&7[&cTicket&7] &f" + ticket.getPlayerName() + " has closed a ticket. #" + ticket.getID();
+                message = "&7[&cTicket&7] &c" + ticket.getPlayerName() + " &fhas closed a ticket. #&c" + ticket.getID() + "&f!";
                 break;
             case ASSIGNED:
-                message = "&7[&cTicket&7] &f" + ticket.getAssignedName() + " has assigned themselves to a ticket. #" + ticket.getID();
+                message = "&7[&cTicket&7] &c" + ticket.getAssignedName() + " &fhas assigned themselves to a ticket. #&c" + ticket.getID() + "&f!";
                 break;
             case COMMENT:
-                message = "&7[&cTicket&7] &f" + ticket.getAssignedName() + " has added a comment to #" + ticket.getID();
+                message = "&7[&cTicket&7] &c" + ticket.getAssignedName() + " &fhas added a comment to #&c" + ticket.getID() + "&f!";
                 break;
             case DELETED:
-                message = "&7[&cTicket&7] &f" + ticket.getPlayerName() + " has deleted " + ticket.getPlayerName() + "'s ticket!";
+                message = "&7[&cTicket&7] &c" + ticket.getPlayerName() + " has deleted &c" + ticket.getPlayerName() + "&f's ticket!";
+                break;
+            case SELF_CLOSED:
+                message = "&7[&cTicket&7] &c" + ticket.getPlayerName() + " &fhas closed their own ticket.";
                 break;
         }
         return message;

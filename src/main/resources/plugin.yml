@@ -17,11 +17,15 @@ permissions:
       - ticket.debug
       - ticket.notify.all
       - ticket.forcedelete
+      - ticket.claim.override
   ticket.staff.*:
     children:
       - ticket.notify
-      - ticket.assign
       - ticket.teleport
+      - ticket.claim
+      - ticket.comment
+      - ticket.list
+      - ticket.close
   ticket.notify.all:
     description: Recieve all ticket notifications.
   ticket.notify:
@@ -30,7 +34,17 @@ permissions:
     description: Toggle notifications to be off.
   ticket.debug:
     description: Debug a ticket to check for faults.
-  ticket.assign:
-    description: Assign yourself to a ticket.
   ticket.teleport:
     description: Teleport to a ticket location through GUI.
+  ticket.claim:
+    description: Claim a ticket for yourself!
+  ticket.claim.override:
+    description: Override the current assignee of a ticket.
+  ticket.comment.override:
+    description: Post a comment on a ticket, even if you're not the assignee.
+  ticket.close.override:
+    description: Close a ticket even if you aren't the assignee.
+  ticket.comment:
+    description: Leave a comment on a ticket.
+  ticket.list:
+    description: List all current tickets open.

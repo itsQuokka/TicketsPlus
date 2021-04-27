@@ -10,6 +10,7 @@ import com.ticketsplus.utilities.StringUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
@@ -119,7 +120,7 @@ public class TicketManager {
                         total = success + failure;
                         Bukkit.getLogger().log(failure > 0 ? Level.SEVERE : Level.INFO,
                                 "Ticket DB Transfer Status - Success: " + success + "/" + total + ". Failure: " + failure + "/" + total);
-                        Bukkit.getLogger().log(Level.INFO, "Completed transfer in: " + (currentTime - System.currentTimeMillis()) + "ms!");
+                        Bukkit.getLogger().log(Level.INFO, "Completed transfer in: " + (System.currentTimeMillis() - currentTime) + "ms!");
 
                     } else {
 
@@ -195,15 +196,20 @@ public class TicketManager {
         9 10 1 2  3  4 5 6 7
         8 9 20 1  2  3 4 5 6
         7 8 9 30  1  2 3 4 5
+        6 7 8 9   4  1 2 3 4
      **/
 
         ItemStack map = new ItemStack(Material.COMPASS);
         ItemMeta mapMeta = map.getItemMeta();
         mapMeta.setDisplayName(StringUtils.color("&c&lLocation"));
-        mapMeta.setLore(Arrays.asList(
-                "The location when the ticket was created.",
-                player.hasPermission("ticket.teleport") ? "You can click me to teleport to the location!" : "",
-                "X: " + ticket.getLocation().getX() + " Y: " + ticket.getLocation().getY() + " Z: " + ticket.getLocation().getZ()));
+        mapMeta.setLore(Arrays.asList(StringUtils.color("&fThe location when the ticket was created."),
+                player.hasPermission("ticket.teleport") ? " " : "",
+                player.hasPermission("ticket.teleport") ?
+                        StringUtils.color("&fYou can click me to teleport to the location!") : "",
+                StringUtils.color(
+                        "&fX: &c" + ticket.getLocation().getX()
+                        + " &fY: &c" + ticket.getLocation().getY()
+                                + "&f Z: &c" + ticket.getLocation().getZ())));
         map.setItemMeta(mapMeta);
 
         Icon teleportIcon = new Icon(map).addClickAction(p -> {
@@ -216,7 +222,17 @@ public class TicketManager {
         ItemStack comments = new ItemStack(Material.MAP);
         ItemMeta commentsMeta = comments.getItemMeta();
         commentsMeta.setDisplayName(StringUtils.color("&c&lStaff Comments"));
-        commentsMeta.setLore(ticket.getComments().isEmpty() ? Collections.singletonList("No comments have been added.") : ticket.getComments());
+        List<String> commentList = new ArrayList<>();
+        if (!Objects.isNull(ticket.getComments()) && !ticket.getComments().isEmpty()) {
+            for (String str : ticket.getComments()){
+                commentList.add(StringUtils.color("&f" + str));
+            }
+            if (commentList.isEmpty()){
+                commentList = null;
+            }
+        }
+
+        commentsMeta.setLore(Objects.isNull(commentList) ? Collections.singletonList(StringUtils.color("&fNo comments have been added.")) : ticket.getComments());
         comments.setItemMeta(commentsMeta);
 
         Icon commentsIcon = new Icon(comments);
@@ -227,16 +243,19 @@ public class TicketManager {
         ItemMeta assigneeMeta = assignee.getItemMeta();
         assigneeMeta.setDisplayName(StringUtils.color("&c&lAssigned To"));
         assigneeMeta.setLore(Objects.isNull(ticket.getAssignedName())
-                ? Arrays.asList("There is no one assigned to this ticket!", player.hasPermission("ticket.assign") ? "Click me to assign yourself!" : "")
-                : Collections.singletonList("The ticket has been assigned to: " + ticket.getAssignedName()));
+                ? Arrays.asList(StringUtils.color("&fThere is no one assigned to this ticket!"),
+                player.hasPermission("ticket.claim") ? StringUtils.color("&fClick me to assign yourself!")
+                        : "")
+                : Collections.singletonList(StringUtils.color("&fThe ticket has been assigned to: &c" + ticket.getAssignedName())));
         assignee.setItemMeta(assigneeMeta);
 
         Icon assigneeIcon = new Icon(assignee).addClickAction(p -> {
-            if (!p.hasPermission("ticket.assign")) return;
+            if (!p.hasPermission("ticket.claim")) return;
 
-            p.closeInventory();
-            this.openTicketInventory(p, ticket);
             ticket.setAssignee(p);
+            p.closeInventory();
+
+            this.openTicketInventory(p, ticket);
 
             if (ticket.isPlayerOnline()) {
                 Objects.requireNonNull(Bukkit.getPlayer(ticket.getPlayerUUID())).sendMessage(StringUtils.color("&7[&cTicket&7] &f" + p.getName() + " has been assigned to your ticket!"));
@@ -245,13 +264,23 @@ public class TicketManager {
 
         /* Sun Dial [ Date ] */
 
-        ItemStack date = new ItemStack(Material.LEATHER_HELMET);
+        ItemStack date = new ItemStack(Material.ITEM_FRAME);
         ItemMeta dateMeta = date.getItemMeta();
         dateMeta.setDisplayName(StringUtils.color("&c&lTime Created"));
-        dateMeta.setLore(Collections.singletonList("The ticket was issued on: " + ticket.getCreationDate()));
+        dateMeta.setLore(Collections.singletonList(StringUtils.color("&fThe ticket was issued on: " + ticket.getCreationDate())));
         date.setItemMeta(dateMeta);
 
         Icon dateIcon = new Icon(date);
+
+        /* Sign [ Ticket Message ] */
+
+        ItemStack message = new ItemStack(Material.BOOK);
+        ItemMeta messageMeta = message.getItemMeta();
+        messageMeta.setDisplayName(StringUtils.color("&c&lTicket Message"));
+        messageMeta.setLore(Collections.singletonList(StringUtils.color("&f" + ticket.getIssuedMessage())));
+        message.setItemMeta(messageMeta);
+
+        Icon messageIcon = new Icon(message);
 
         /* Close Inventory Button*/
 
@@ -264,27 +293,41 @@ public class TicketManager {
 
         /* Close Inventory Button*/
 
-        ItemStack statusChange = new ItemStack(Material.ANVIL);
+        ItemStack close = new ItemStack(Material.ANVIL);
+        ItemMeta closeMeta = close.getItemMeta();
+        closeMeta.setDisplayName(StringUtils.color("&c&lClose Ticket"));
+        closeMeta.setLore(Collections.singletonList(StringUtils.color("&fClick me to close the ticket!")));
+        close.setItemMeta(closeMeta);
+
+        Icon closeIcon = new Icon(close).addClickAction(p -> verifyDeleteInventory(p, ticket));
+
+        /* Current Ticket Status */
+
+        ItemStack statusChange = new ItemStack(Material.NAME_TAG);
         ItemMeta statusChangeMeta = statusChange.getItemMeta();
-        statusChangeMeta.setDisplayName(StringUtils.color("&c&lClose Ticket"));
-        statusChangeMeta.setLore(Collections.singletonList("Click me to close the ticket!"));
+        statusChangeMeta.setDisplayName(StringUtils.color("&c&lCurrent Ticket Status"));
+        statusChangeMeta.setLore(Collections.singletonList(StringUtils.color("&fThe status of the ticket is: &c" + ticket.getCurrentStatus() + "&f!")));
         statusChange.setItemMeta(statusChangeMeta);
 
-        Icon statusChangeIcon = new Icon(statusChange).addClickAction(p -> verifyDeleteInventory(p, ticket));
+        Icon statusIcon = new Icon(statusChange);
 
         /* Custom Holder Creation */
 
-        CustomHolder customHolder = new CustomHolder(36, StringUtils.color("&cViewing " + ticket.getPlayerName() + "'s Ticket"));
+        CustomHolder customHolder = new CustomHolder(45, StringUtils.color("&cViewing " + ticket.getPlayerName() + "'s Ticket"));
 
-        customHolder.setIcon(10, teleportIcon);
-        customHolder.setIcon(12, assigneeIcon);
-        customHolder.setIcon(14, commentsIcon);
-        customHolder.setIcon(16, dateIcon);
+        customHolder.setIcon(4, messageIcon);
+        customHolder.setIcon(19, teleportIcon);
+        customHolder.setIcon(21, assigneeIcon);
+        customHolder.setIcon(23, commentsIcon);
+        customHolder.setIcon(25, dateIcon);
 
-        customHolder.setIcon(31, exitIcon);
-        customHolder.setIcon(33, statusChangeIcon);
+        customHolder.setIcon(38, statusIcon);
+        customHolder.setIcon(40, exitIcon);
+        customHolder.setIcon(42, closeIcon);
 
-        player.openInventory(customHolder.getInventory());
+        Inventory inventory = customHolder.getInventory();
+        player.openInventory(inventory);
+
     }
 
     /**
@@ -294,7 +337,7 @@ public class TicketManager {
      */
     private void verifyDeleteInventory(Player player, Ticket ticket){
 
-        ItemStack confirm = new ItemStack(Material.GREEN_WOOL);
+        ItemStack confirm = new ItemStack(Material.EMERALD);
         ItemMeta confirmMeta = confirm.getItemMeta();
         confirmMeta.setDisplayName(StringUtils.color("&c&lConfirm"));
         confirm.setItemMeta(confirmMeta);
@@ -309,7 +352,7 @@ public class TicketManager {
 
                 deleteTicket(ticket, true);
 
-                Bukkit.getServer().getPluginManager().callEvent(new TicketUpdateEvent(ticket, UpdateType.CLOSED));
+                Bukkit.getServer().getPluginManager().callEvent(new TicketUpdateEvent(ticket, UpdateType.SELF_CLOSED));
 
             } else {
 
@@ -323,7 +366,7 @@ public class TicketManager {
 
         });
 
-        ItemStack deny = new ItemStack(Material.RED_WOOL);
+        ItemStack deny = new ItemStack(Material.BARRIER);
         ItemMeta denyMeta = deny.getItemMeta();
         denyMeta.setDisplayName(StringUtils.color("&c&lCancel"));
         deny.setItemMeta(denyMeta);
@@ -337,8 +380,8 @@ public class TicketManager {
         });
 
         CustomHolder customHolder = new CustomHolder(9, StringUtils.color("&cAre you sure?"));
-        customHolder.setIcon(3, confirmIcon);
-        customHolder.setIcon(5, denyIcon);
+        customHolder.setIcon(5, confirmIcon);
+        customHolder.setIcon(3, denyIcon);
 
         player.openInventory(customHolder.getInventory());
     }

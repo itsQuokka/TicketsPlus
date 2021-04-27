@@ -30,7 +30,7 @@ public class Ticket {
     private String assignedName;
     private UUID assignedUUID;
 
-    private List<String> comments;
+    private List<String> comments, staffnotes;
     private int ticketStatus;
 
     public Ticket(Player player, String message){
@@ -101,7 +101,14 @@ public class Ticket {
         this.comments.add(string);
     }
 
-    private String getDate() {
+    public void addStaffNote(String string){
+        if (this.staffnotes == null){
+            this.staffnotes = new ArrayList<>();
+        }
+        this.staffnotes.add(string);
+    }
+
+    public String getDate() {
         DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy/MM/dd hh:mm:ss");
         LocalDateTime now = LocalDateTime.now();
         return dtf.format(now);

@@ -15,7 +15,7 @@ public class T_Status extends CommandExecutor {
 
         this.setCommand("status");
         this.setPermission("ticket.status");
-        this.setLength(2);
+        this.setLength(1);
         this.setUsage("/ticket status");
     }
 

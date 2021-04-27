@@ -31,9 +31,8 @@ public class CustomHolder implements InventoryHolder {
     public Inventory getInventory() {
         Inventory inventory = Bukkit.createInventory(this, this.size, this.title);
 
-        //You should check for inventory size so you don't get errors
         for (Map.Entry<Integer, Icon> entry : this.icons.entrySet()) {
-            inventory.setItem(entry.getKey(), entry.getValue());
+            inventory.setItem(entry.getKey(), entry.getValue().itemStack);
         }
 
         return inventory;

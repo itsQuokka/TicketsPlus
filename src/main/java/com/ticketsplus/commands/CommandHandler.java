@@ -3,7 +3,6 @@ package com.ticketsplus.commands;
 import com.ticketsplus.TicketsPlus;
 import com.ticketsplus.commands.custom.*;
 import com.ticketsplus.utilities.StringUtils;
-import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.ConsoleCommandSender;
@@ -26,6 +25,9 @@ public class CommandHandler implements org.bukkit.command.CommandExecutor {
         commands.put("info", new T_Info(plugin));
         commands.put("claim", new T_Claim(plugin));
         commands.put("delete", new T_ForceDelete(plugin));
+        commands.put("comment", new T_Comment(plugin));
+        commands.put("close", new T_Close(plugin));
+        commands.put("list", new T_List(plugin));
     }
 
     @Override
@@ -52,17 +54,19 @@ public class CommandHandler implements org.bukkit.command.CommandExecutor {
                     }
 
                     if (command.getCommand().equalsIgnoreCase("create")){
-                        // ticket create this is my message
-                        if (args.length <= 1){
-                            sender.sendMessage(ChatColor.RED + "&7[&cTicket&7] &fYou need to specify an issue!");
-                            return true;
-                        }
+                        command.setLength(args.length - 1);
+                        command.execute(sender, args);
+                        return true;
+                    }
+
+                    if (command.getCommand().equalsIgnoreCase("comment")){
+                        command.setLength(args.length - 2);
                         command.execute(sender, args);
                         return true;
                     }
 
                     if (command.getLength() > args.length){
-                        sender.sendMessage(ChatColor.RED + "&7[&cTicket&7] &cCorrect usage: &7" + command.getUsage());
+                        sender.sendMessage(StringUtils.color("&7[&cTicket&7] &cCorrect usage: &7" + command.getUsage()));
                         return true;
                     }
 

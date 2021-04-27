@@ -12,7 +12,6 @@ public class T_Create extends CommandExecutor {
     private TicketsPlus plugin;
     public T_Create(TicketsPlus plugin) {
         this.plugin = plugin;
-
         this.setCommand("create");
         this.setPermission("ticket.create");
         this.setUsage("/ticket create <message>");
@@ -28,16 +27,16 @@ public class T_Create extends CommandExecutor {
             return;
         }
 
-        StringBuilder stringBuilder = new StringBuilder(args[1]);
-        for (int i = 1; i <= args.length; i++){
-            stringBuilder.append(args[i] + ' ');
+        StringBuilder stringBuilder = new StringBuilder();
+        for (int i = 1; i < args.length; i++){
+            stringBuilder.append(args[i]).append(' ');
         }
 
         Ticket t = new Ticket(player, stringBuilder.toString());
 
         plugin.getTicketManager().addTicket(t);
 
-        player.sendMessage(StringUtils.color("&7[&cTicket&7] &fYou've submitted a ticket!"));
+        player.sendMessage(StringUtils.color("&7[&cTicket&7] &fYou've successfully submitted a ticket!"));
         player.sendMessage(StringUtils.color("&7[&cTicket&7] &fYou can check you're ticket status with &c/ticket status&f!"));
 
 
