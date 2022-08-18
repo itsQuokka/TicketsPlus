@@ -6,33 +6,35 @@ import com.ticketsplus.events.listeners.JoinEvent;
 import com.ticketsplus.events.listeners.TicketCreatedEvent;
 import com.ticketsplus.events.listeners.TicketUpdateEvent;
 import com.ticketsplus.managers.PlayerManager;
+import com.ticketsplus.managers.StorageManager;
 import com.ticketsplus.managers.TicketManager;
+import com.ticketsplus.obj.Ticket;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 
-import java.time.Duration;
-import java.time.Instant;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
-import java.time.temporal.ChronoUnit;
+import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.logging.Level;
 
 public class TicketsPlus extends JavaPlugin {
 
     private TicketManager ticketManager;
     private PlayerManager playerManager;
+    private StorageManager storageManager;
 
+    /**
+     * Project is ran.
+     */
     @Override
     public void onEnable() {
 
-        runWipe();
-
         registerManagers();
-
         registerCommands();
-
         registerEvents();
 
+        runWipe();
 
     }
 
@@ -45,6 +47,7 @@ public class TicketsPlus extends JavaPlugin {
 
         playerManager = new PlayerManager();
         ticketManager = new TicketManager(this);
+        storageManager = new StorageManager(this);
 
     }
 
@@ -65,18 +68,52 @@ public class TicketsPlus extends JavaPlugin {
 
     }
 
-    private void runWipe(){
-        ZonedDateTime nextTime = ZonedDateTime.ofInstant(Instant.now(),
-                ZoneId.systemDefault()).plusDays(this.getConfig().getInt("database-clearance")).truncatedTo(ChronoUnit.DAYS);
-
-        long delay = Duration.between(ZonedDateTime.now(), nextTime).getSeconds() * 20;
+    private void runWipe() {
 
         this.getServer().getScheduler().runTaskLater(this, () -> {
+            int success = 0, attempt = 0, failure = 0;
+            List<String> idRemovalList = new ArrayList<>();
+            if (!this.ticketManager.getTicketCache().isEmpty()) {
+                for (Ticket ticket : this.ticketManager.getTicketCache()) {
+                    if (ticket.getIntStatus() == 2){
+                        idRemovalList.add(ticket.getID());
+                        this.ticketManager.getTicketCache().remove(ticket);
+                        attempt++;
+                    }
+                }
+            }
 
-            // Todo: Get rid of all MySQL tickets with a ticket status of 2.
-
+            if (this.storageManager.isDatabase()){
+                // Todo: Database clear.
+            } else {
+                File storageFile = new File(this.getDataFolder(), "tickets");
+                File[] files = storageFile.listFiles((file, s) -> {
+                    file.getName().endsWith(".yml");
+                    return false;
+                });
+                if (files != null) {
+                    for (File file : files) {
+                        for (String str : idRemovalList) {
+                            final String fileName = file.getName().substring(0, file.getName().length() - 4);
+                            if (fileName.equalsIgnoreCase(str)) {
+                                if (file.delete()) {
+                                    success++;
+                                } else {
+                                    failure++;
+                                }
+                            }
+                        }
+                    }
+                    this.getLogger().log(Level.INFO, "Success/Failed/Total Tickets Cleared - " + success + "/" + failure + "/" + attempt);
+                }
+            }
             runWipe();
-        }, delay);
+        },  60 * 60 * 20L * this.getConfig().getInt("ticket-clearance"));
+    }
+
+    public boolean isDatabase(){
+        return this.getConfig().getBoolean("database-storage");
+
     }
 
     public TicketManager getTicketManager() {
@@ -84,4 +121,6 @@ public class TicketsPlus extends JavaPlugin {
     }
 
     public PlayerManager getPlayerManager() { return playerManager; }
+
+    public StorageManager getStorageManager() { return storageManager; }
 }

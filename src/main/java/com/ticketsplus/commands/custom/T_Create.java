@@ -20,7 +20,7 @@ public class T_Create extends CommandExecutor {
     @Override
     public void execute(CommandSender sender, String[] args) {
 
-        Player player = (Player) sender;
+        final Player player = (Player) sender;
 
         if (args.length <= 1){
             player.sendMessage(StringUtils.color("&7[&cTicket&7] &fYou have to specify a message!"));
@@ -28,8 +28,11 @@ public class T_Create extends CommandExecutor {
         }
 
         StringBuilder stringBuilder = new StringBuilder();
+
         for (int i = 1; i < args.length; i++){
+
             stringBuilder.append(args[i]).append(' ');
+
         }
 
         Ticket t = new Ticket(player, stringBuilder.toString());
@@ -37,6 +40,7 @@ public class T_Create extends CommandExecutor {
         plugin.getTicketManager().addTicket(t);
 
         player.sendMessage(StringUtils.color("&7[&cTicket&7] &fYou've successfully submitted a ticket!"));
+
         player.sendMessage(StringUtils.color("&7[&cTicket&7] &fYou can check you're ticket status with &c/ticket status&f!"));
 
 

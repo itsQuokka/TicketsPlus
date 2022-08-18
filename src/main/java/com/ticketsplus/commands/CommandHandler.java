@@ -49,7 +49,7 @@ public class CommandHandler implements org.bukkit.command.CommandExecutor {
                     }
 
                     if (command.getPermission() != null && !sender.hasPermission(command.getPermission())) {
-                        sender.sendMessage(StringUtils.color("&7[&cTicket&7] &cYou cannot issue that command!"));
+                        sender.sendMessage(StringUtils.color("&7[&cTicket&7] &fYou are not allowed to do that!"));
                         return true;
                     }
 

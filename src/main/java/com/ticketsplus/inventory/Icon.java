@@ -7,9 +7,9 @@ import java.util.List;
 
 public class Icon {
 
-    public final ItemStack itemStack;
+    final ItemStack itemStack;
 
-    public final List<ClickAction> clickActions = new ArrayList<>();
+    private final List<ClickAction> clickActions = new ArrayList<>();
 
     public Icon(ItemStack itemStack) {
         this.itemStack = itemStack;
@@ -23,4 +23,5 @@ public class Icon {
     public List<ClickAction> getClickActions() {
         return this.clickActions;
     }
+
 }

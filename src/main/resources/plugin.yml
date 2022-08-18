@@ -20,12 +20,17 @@ permissions:
       - ticket.claim.override
   ticket.staff.*:
     children:
+      - ticket.player.*
       - ticket.notify
       - ticket.teleport
       - ticket.claim
       - ticket.comment
       - ticket.list
       - ticket.close
+  ticket.player.*:
+    children:
+      - ticket.create
+      - ticket.close.self
   ticket.notify.all:
     description: Recieve all ticket notifications.
   ticket.notify:
@@ -40,8 +45,6 @@ permissions:
     description: Claim a ticket for yourself!
   ticket.claim.override:
     description: Override the current assignee of a ticket.
-  ticket.comment.override:
-    description: Post a comment on a ticket, even if you're not the assignee.
   ticket.close.override:
     description: Close a ticket even if you aren't the assignee.
   ticket.comment:

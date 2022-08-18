@@ -17,11 +17,12 @@ public class JoinEvent implements Listener {
     @EventHandler
     public void onPlayerJoinEvent(PlayerJoinEvent event) {
         plugin.getServer().getScheduler().scheduleSyncDelayedTask(plugin, () -> {
+            if (!event.getPlayer().isOnline()) return;
             Ticket tempTicket = plugin.getTicketManager().findTicket(event.getPlayer());
 
             if (tempTicket == null) return;
 
-            event.getPlayer().sendMessage(StringUtils.color("&7[&cTicket&7] &fMake sure to check your ticket with: /ticket status " + tempTicket.getID()));
+            event.getPlayer().sendMessage(StringUtils.color("&7[&cTicket&7] &fMake sure to check your ticket with: &c/ticket status " + tempTicket.getID()));
             event.getPlayer().sendMessage(StringUtils.color("&7[&cTicket&7] &fOnce you close your own ticket, it is gone permanently!"));
         }, 20 * 2L);
     }

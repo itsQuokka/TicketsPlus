@@ -1,15 +1,13 @@
 package com.ticketsplus.obj;
 
+import com.ticketsplus.utilities.StringUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.UUID;
+import java.util.*;
 
 public class Ticket {
 
@@ -34,19 +32,36 @@ public class Ticket {
     private int ticketStatus;
 
     public Ticket(Player player, String message){
+        this.identifier = generateID();
         this.playerName = player.getName();
         this.playerUUID = player.getUniqueId();
-        this.issuedMessage = message;
         this.location = player.getLocation();
+        this.issuedMessage = message;
         this.creationDate = this.getDate();
-        this.identifier = generateID();
         this.ticketStatus = 0;
+        this.assignedName = null;
+        this.assignedUUID = null;
+        this.comments = Collections.emptyList();
+        this.staffnotes = Collections.emptyList();
+    }
+
+    public Ticket(String identifier, String playerName, UUID playerUUID, Location location, String issuedMessage, String creationDate, int status, String assigneeName, UUID assigneeUUID, List<String> comments, List<String> staffNotes) {
+        this.identifier = identifier;
+        this.playerName = playerName;
+        this.playerUUID = playerUUID;
+        this.location = location;
+        this.issuedMessage = issuedMessage;
+        this.creationDate = creationDate;
+        this.ticketStatus = status;
+        this.assignedName = assigneeName;
+        this.assignedUUID = assigneeUUID;
+        this.comments = comments.isEmpty() ? Collections.emptyList() : comments;
+        this.staffnotes = staffNotes.isEmpty() ? Collections.emptyList() : staffNotes;
     }
 
     public void setAssignee(Player player){
         this.assignedName = player.getName();
         this.assignedUUID = player.getUniqueId();
-
         this.ticketStatus = 1;
     }
 
@@ -86,27 +101,13 @@ public class Ticket {
         return comments;
     }
 
-    public boolean hasAssignee() { return assignedUUID != null; }
+    public boolean hasAssignee() { return getIntStatus() == 1; }
 
     public boolean isPlayerOnline() {
         return Objects.requireNonNull(Bukkit.getPlayer(this.playerUUID)).isOnline();
     }
 
     /* Utility Methods */
-
-    public void addComment(String string){
-        if (this.comments == null){
-            this.comments = new ArrayList<>();
-        }
-        this.comments.add(string);
-    }
-
-    public void addStaffNote(String string){
-        if (this.staffnotes == null){
-            this.staffnotes = new ArrayList<>();
-        }
-        this.staffnotes.add(string);
-    }
 
     public String getDate() {
         DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy/MM/dd hh:mm:ss");
@@ -123,7 +124,7 @@ public class Ticket {
         this.ticketStatus = status;
     }
 
-    public String getCurrentStatus(){
+    public String getTextStatus(){
         if (this.ticketStatus == 0){
             return "OPEN";
         } else if (this.ticketStatus == 1){
@@ -134,4 +135,23 @@ public class Ticket {
         return "";
     }
 
+    public Integer getIntStatus() {
+        return ticketStatus;
+    }
+
+    public List<String> getStaffNotes() {
+        return staffnotes;
+    }
+
+    public void setComments(ArrayList<String> strings) {
+        this.comments = strings;
+    }
+
+    public void setStaffnotes(ArrayList<String> strings){
+        this.staffnotes = strings;
+    }
+
+    public void sendMessage(String message) {
+        Objects.requireNonNull(Bukkit.getPlayer(this.getPlayerUUID())).sendMessage(StringUtils.color(message));
+    }
 }

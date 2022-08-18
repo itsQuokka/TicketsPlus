@@ -24,22 +24,22 @@ public class T_Debug extends CommandExecutor {
     @Override
     public void execute(CommandSender sender, String[] args) {
 
-        Player player = (Player) sender;
+        final Player player = (Player) sender;
 
-        Ticket ticket = plugin.getTicketManager().findTicket(args[1]);
+        final Ticket ticket = plugin.getTicketManager().findTicket(args[1]);
 
         if (ticket == null){
             player.sendMessage(StringUtils.color("&7[&cTicket&7] &fThere was no ticket found under that ID!"));
             return;
         }
 
-        player.sendMessage(StringUtils.color("&7[&cTicket&7] &fGrabbing ticket details for errors."));
+        player.sendMessage(StringUtils.color("&fGrabbing ticket details for errors."));
 
-        player.sendMessage(StringUtils.color("&7Ticket ID: &f" + check(ticket.getID())));
-        player.sendMessage(StringUtils.color("&7Player Name: &f" + check(ticket.getPlayerName())));
-        player.sendMessage(StringUtils.color("&7Creation Date: &f" + check(ticket.getCreationDate())));
-        player.sendMessage(StringUtils.color("&7Issue Message: &f" + check(ticket.getIssuedMessage())));
-        player.sendMessage(StringUtils.color("&7Location: &f" + check(ticket.getLocation())));
+        player.sendMessage(StringUtils.color("&cTicket ID: &f" + check(ticket.getID())));
+        player.sendMessage(StringUtils.color("&cPlayer Name: &f" + check(ticket.getPlayerName())));
+        player.sendMessage(StringUtils.color("&cCreation Date: &f" + check(ticket.getCreationDate())));
+        player.sendMessage(StringUtils.color("&cIssue Message: &f" + check(ticket.getIssuedMessage())));
+        player.sendMessage(StringUtils.color("&cLocation: &f" + check(ticket.getLocation())));
 
         player.sendMessage(StringUtils.color("&7[&cTicket&7] &f&m--------------------"));
 

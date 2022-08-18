@@ -10,8 +10,6 @@ import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
-import java.util.Objects;
-
 public class T_Claim extends CommandExecutor {
 
     private TicketsPlus plugin;
@@ -36,7 +34,7 @@ public class T_Claim extends CommandExecutor {
             return;
         }
 
-        if (ticket.getCurrentStatus().equalsIgnoreCase("closed")) {
+        if (ticket.getIntStatus() == 2) {
             player.sendMessage(StringUtils.color("&7[&cTicket&7] &fThat ticket seems to have been closed!"));
             return;
         }
@@ -46,22 +44,19 @@ public class T_Claim extends CommandExecutor {
                 player.sendMessage(StringUtils.color("&7[&cTicket&7] &fYou're already assigned to that ticket!"));
                 return;
             }
-            if (player.hasPermission("ticket.claim.override"))
-            player.sendMessage(StringUtils.color("&7[&cTicket&7] &fThat ticket already has an assignee!"));
+            if (!player.hasPermission("ticket.claim.override")) player.sendMessage(StringUtils.color("&7[&cTicket&7] &fThat ticket already has an assignee!"));
             return;
         }
 
         if (ticket.isPlayerOnline()) {
-            Objects.requireNonNull(Bukkit.getPlayer(ticket.getPlayerUUID())).sendMessage(StringUtils.color(
-                    "&7[&cTicket&7] &fYour ticket has been updated! Check with &c/ticket status&f!"));
+            ticket.sendMessage(StringUtils.color("&7[&cTicket&7] &fYour ticket has been updated! Check with &c/ticket status&f!"));
         }
 
-        // Required to be first in order to process correct ticket event.
         ticket.setAssignee(player);
 
         Bukkit.getServer().getPluginManager().callEvent(new TicketUpdateEvent(ticket, UpdateType.ASSIGNED));
 
-        ticket.addStaffNote(StringUtils.color("&f" + ticket.getDate() + " - &c" + player.getName() + "&f claimed the ticket."));
+        plugin.getTicketManager().addComment(ticket, StringUtils.color("&f" + ticket.getDate() + " - &c" + player.getName() + "&f claimed the ticket."), true);
 
         player.sendMessage(StringUtils.color("&7[&cTicket&7] &fYou've been assigned yourself to &c" + ticket.getPlayerName() + "&f's ticket!"));
 

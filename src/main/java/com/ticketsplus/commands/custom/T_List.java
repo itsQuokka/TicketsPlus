@@ -4,15 +4,12 @@ import com.ticketsplus.TicketsPlus;
 import com.ticketsplus.commands.CommandExecutor;
 import com.ticketsplus.inventory.CustomHolder;
 import com.ticketsplus.inventory.Icon;
+import com.ticketsplus.managers.ItemManager;
 import com.ticketsplus.obj.Ticket;
 import com.ticketsplus.utilities.StringUtils;
 import org.bukkit.Material;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
-import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.ItemMeta;
-
-import java.util.Collections;
 
 public class T_List extends CommandExecutor {
 
@@ -41,18 +38,17 @@ public class T_List extends CommandExecutor {
         int i = 0;
         for (Ticket ticket : plugin.getTicketManager().getTicketCache()) {
 
-            ItemStack ticketItem = new ItemStack(Material.MAP);
-            ItemMeta ticketItemMeta = ticketItem.getItemMeta();
-            ticketItemMeta.setDisplayName(StringUtils.color("&c&l" + ticket.getPlayerName() + "&f's Ticket"));
-            ticketItemMeta.setLore(Collections.singletonList(StringUtils.color("&fClick me to open ticket!")));
-            ticketItem.setItemMeta(ticketItemMeta);
-
-            Icon theIcon = new Icon(ticketItem).addClickAction(p -> {
+            Icon ticketIcon = new Icon(
+                new ItemManager(Material.MAP, 1)
+                    .setDisplayName("&c&l" + ticket.getPlayerName() + "&f's Ticket!")
+                    .addLoreLine("&fClick me to open the ticket!")
+                .build()
+            ).addClickAction(p -> {
                 p.closeInventory();
                 plugin.getTicketManager().openTicketInventory(p, ticket);
             });
 
-            customHolder.setIcon(i, theIcon);
+            customHolder.setIcon(i, ticketIcon);
             i++;
         }
 

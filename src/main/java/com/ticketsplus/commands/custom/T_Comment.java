@@ -10,8 +10,6 @@ import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
-import java.util.Objects;
-
 public class T_Comment extends CommandExecutor {
 
     private TicketsPlus plugin;
@@ -25,46 +23,40 @@ public class T_Comment extends CommandExecutor {
     @Override
     public void execute(CommandSender sender, String[] args) {
 
-        Player player = (Player) sender;
+        final Player player = (Player) sender;
 
-        Ticket ticket = plugin.getTicketManager().findTicket(args[1]);
+        final Ticket ticket = plugin.getTicketManager().findTicket(args[1]);
 
         if (ticket == null){
             player.sendMessage(StringUtils.color("&7[&cTicket&7] &fThere was no ticket found under that ID!"));
             return;
         }
 
-        if (ticket.getCurrentStatus().equalsIgnoreCase("closed")) {
+        if (ticket.getIntStatus() == 2) {
             player.sendMessage(StringUtils.color("&7[&cTicket&7] &fThat ticket seems to have been closed!"));
             return;
         }
 
-        if (!player.hasPermission("ticket.comment.override")) {
-            if (ticket.hasAssignee()) {
-                if (!ticket.getAssignedUUID().equals(player.getUniqueId())) {
-                    player.sendMessage(StringUtils.color("&7[&cTicket&7] &fYou are not assigned to that ticket!"));
-                    return;
-                }
+        if (ticket.hasAssignee()) {
+            if (!ticket.getAssignedUUID().equals(player.getUniqueId())) {
+                player.sendMessage(StringUtils.color("&7[&cTicket&7] &fYou are not assigned to that ticket!"));
+                return;
             }
         }
 
         StringBuilder stringBuilder = new StringBuilder();
         for (int i = 2; i < args.length; i++){
-            stringBuilder.append(args[i] + ' ');
+            stringBuilder.append(args[i]).append(' ');
         }
 
         if (ticket.isPlayerOnline()) {
-
-            Objects.requireNonNull(Bukkit.getPlayer(ticket.getPlayerUUID())).sendMessage(StringUtils.color(
-                    "&7[&cTicket&7] &fYour ticket has been updated! Check with &c/ticket status&f!"));
+            ticket.sendMessage(StringUtils.color("&7[&cTicket&7] &fYour ticket has been updated! Check with &c/ticket status&f!"));
         }
 
         // Required to be first in order to process correct ticket event.
-        ticket.addComment(StringUtils.color("&c" + player.getName() + " &f- &c" + ticket.getDate()));
+        plugin.getTicketManager().addComment(ticket, StringUtils.color("&c" + player.getName() + " &f- &c" + ticket.getDate()), false);
 
-        ticket.addComment(StringUtils.color("&f" + stringBuilder.toString()));
-
-        ticket.addStaffNote(StringUtils.color("&f" + ticket.getDate() + " - &c" + player.getName() + "&f commented on ticket."));
+        plugin.getTicketManager().addComment(ticket, StringUtils.color("&f" + stringBuilder.toString()), false);
 
         Bukkit.getServer().getPluginManager().callEvent(new TicketUpdateEvent(ticket, UpdateType.COMMENT));
 

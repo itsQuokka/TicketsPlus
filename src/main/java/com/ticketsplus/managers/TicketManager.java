@@ -11,9 +11,8 @@ import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
-import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.ItemMeta;
 
+import java.io.File;
 import java.util.*;
 import java.util.logging.Level;
 
@@ -27,7 +26,10 @@ public class TicketManager {
         this.plugin = plugin;
 
         this.ticketCache = new ArrayList<>();
-        startRunnable();
+
+        if (plugin.isDatabase()){
+
+        }
     }
 
     /**
@@ -42,6 +44,9 @@ public class TicketManager {
         }
 
         ticketCache.add(ticket);
+
+        /* Testing */
+        plugin.getStorageManager().saveTicket(ticket);
 
         Bukkit.getServer().getPluginManager().callEvent(new TicketUpdateEvent(ticket, UpdateType.OPEN));
 
@@ -68,14 +73,35 @@ public class TicketManager {
 
         if (force){
             ticketCache.remove(ticket);
-            /**
-             * Todo: Remove from Database.
-             */
+            File f = new File(plugin.getDataFolder(), "tickets/" + ticket.getID() + ".yml");
+            if (f.exists()){
+                f.delete();
+            }
         } else {
             ticket.setCurrentStatus(2);
         }
 
         return true;
+    }
+
+    /**
+     * Add a comment to a ticket, rather it be for the player or staff notes.
+     * @param ticket the ticket to add the comment to
+     * @param message the message to add
+     * @param privateNote if it is meant for the player, or for staff
+     */
+    public void addComment(Ticket ticket, String message, boolean privateNote){
+        if (!privateNote) {
+            if (ticket.getComments() == Collections.EMPTY_LIST) {
+                ticket.setComments(new ArrayList<>());
+            }
+            ticket.getComments().add(message);
+        } else {
+            if (ticket.getStaffNotes() == Collections.EMPTY_LIST){
+                ticket.setStaffnotes(new ArrayList<>());
+            }
+            ticket.getStaffNotes().add(message);
+        }
     }
 
     /**
@@ -87,72 +113,13 @@ public class TicketManager {
     }
 
     /**
-     * Start the cache to database transfer runnable.
-     */
-    private void startRunnable() {
-
-        if (plugin != null) {
-
-                this.bukkitRunnable = plugin.getServer().getScheduler().scheduleSyncRepeatingTask(plugin, () -> {
-
-                    if (ticketCache != null && !ticketCache.isEmpty()) {
-
-                        long currentTime = System.currentTimeMillis();
-                        int success = 0, failure = 0, total;
-
-                        for (Ticket ticket : plugin.getTicketManager().ticketCache) {
-
-                            try {
-
-                                uploadTicket(ticket);
-                                success++;
-
-                            } catch (Exception e) {
-
-                                Bukkit.getLogger().log(Level.SEVERE, "TM-SR - Ticket failed to upload.");
-                                Bukkit.getLogger().log(Level.SEVERE, "TM-SR - Use /ticket debug " + ticket.getID());
-                                Bukkit.getLogger().log(Level.SEVERE, e.getCause().toString());
-                                failure++;
-
-                            }
-                        }
-
-                        total = success + failure;
-                        Bukkit.getLogger().log(failure > 0 ? Level.SEVERE : Level.INFO,
-                                "Ticket DB Transfer Status - Success: " + success + "/" + total + ". Failure: " + failure + "/" + total);
-                        Bukkit.getLogger().log(Level.INFO, "Completed transfer in: " + (System.currentTimeMillis() - currentTime) + "ms!");
-
-                    } else {
-
-                        Bukkit.getLogger().log(Level.INFO, "There were 0 tickets submitted on this wave.");
-
-                    }
-
-                }, 0L, 60 * 20 * plugin.getConfig().getInt("cache-to-database-minutes"));
-        }
-    }
-
-    /**
-     * Stop the cache to database transfer runnable.
-     * @param restart true to have the runnable start again.
-     */
-    private void cancelRunnable(boolean restart) {
-        if (Bukkit.getScheduler().isCurrentlyRunning(bukkitRunnable)) {
-            Bukkit.getScheduler().cancelTask(bukkitRunnable);
-            if (restart) {
-                startRunnable();
-            }
-        }
-    }
-
-    /**
      * Search for a ticket in the cache, and if not found, check the database.
      * @param player search for ticket under player object.
      * @return returns ticket if not null.
      */
     public Ticket findTicket(Player player) {
         for (Ticket ticket : ticketCache){
-            if (ticket.getPlayerUUID().equals(player.getUniqueId())){
+            if (ticket.getPlayerUUID().toString().equals(player.getUniqueId().toString())){
                 return ticket;
             }
         }
@@ -191,132 +158,130 @@ public class TicketManager {
      */
     public void openTicketInventory(Player player, Ticket ticket) {
 
-    /** Inventory Layout.
-        0 1 2 3   4  5 6 7 8
-        9 10 1 2  3  4 5 6 7
-        8 9 20 1  2  3 4 5 6
-        7 8 9 30  1  2 3 4 5
-        6 7 8 9   4  1 2 3 4
-     **/
-
-        ItemStack map = new ItemStack(Material.COMPASS);
-        ItemMeta mapMeta = map.getItemMeta();
-        mapMeta.setDisplayName(StringUtils.color("&c&lLocation"));
-        mapMeta.setLore(Arrays.asList(StringUtils.color("&fThe location when the ticket was created."),
-                player.hasPermission("ticket.teleport") ? " " : "",
-                player.hasPermission("ticket.teleport") ?
-                        StringUtils.color("&fYou can click me to teleport to the location!") : "",
-                StringUtils.color(
-                        "&fX: &c" + ticket.getLocation().getX()
-                        + " &fY: &c" + ticket.getLocation().getY()
-                                + "&f Z: &c" + ticket.getLocation().getZ())));
-        map.setItemMeta(mapMeta);
-
-        Icon teleportIcon = new Icon(map).addClickAction(p -> {
-            if (!p.hasPermission("ticket.teleport")) return;
-            p.teleport(ticket.getLocation());
+        /* Location [ Compass ] */
+        Icon locationIcon = new Icon(
+            new ItemManager(Material.COMPASS, 1)
+                .setDisplayName("&c&lLocation")
+                .addLoreLine(new ArrayList<String>() {{
+                    this.add("&fThe location where the ticket was created.");
+                    this.add("&fX: &c" + ticket.getLocation().getX()
+                            + " &fY: &c" + ticket.getLocation().getY()
+                            + " &fZ: &c" + ticket.getLocation().getZ());
+                    if (player.hasPermission("ticket.teleport")) {
+                        this.add("&7&m---------------");
+                        this.add("&aYou can click me to teleport to the location!");
+                    }
+                }}).build()
+        ).addClickAction(p -> {
+            if (p.hasPermission("ticket.teleport")) {
+                p.teleport(ticket.getLocation());
+            }
         });
 
         /* Map [ Comments ] */
 
-        ItemStack comments = new ItemStack(Material.MAP);
-        ItemMeta commentsMeta = comments.getItemMeta();
-        commentsMeta.setDisplayName(StringUtils.color("&c&lStaff Comments"));
-        List<String> commentList = new ArrayList<>();
+        ItemManager itemManager = new ItemManager(Material.MAP, 1);
+        itemManager.setDisplayName("&c&lStaff Comments");
         if (!Objects.isNull(ticket.getComments()) && !ticket.getComments().isEmpty()) {
             for (String str : ticket.getComments()){
-                commentList.add(StringUtils.color("&f" + str));
+                itemManager.addLoreLine(str);
             }
-            if (commentList.isEmpty()){
-                commentList = null;
-            }
+        } else {
+            itemManager.addLoreLine("&fThere are no comments available!");
         }
 
-        commentsMeta.setLore(Objects.isNull(commentList) ? Collections.singletonList(StringUtils.color("&fNo comments have been added.")) : ticket.getComments());
-        comments.setItemMeta(commentsMeta);
+        Icon commentsIcon = new Icon(itemManager.build());
 
-        Icon commentsIcon = new Icon(comments);
+        /* Leather Helmet [ Location ] */
 
-        /* Diamond Helmet [ Location ] */
+        Icon assigneeIcon = new Icon(
+            new ItemManager(Material.LEATHER_HELMET, 1)
+                .setDisplayName("&c&lAssignee")
+                .addLoreLine(Objects.isNull(ticket.getAssignedName())
+                        ? "&fNobody has been assigned to this ticket!"
+                        : "&fThe ticket has been assigned to: &c" + ticket.getAssignedName() + "&f!")
+                .addLoreLine("&7&m---------------")
+                .addLoreLine(Objects.isNull(ticket.getAssignedName()) ? "&aClick me to assign yourself to this ticket!" : "",
+                        player,
+                        Collections.singletonList("ticket.claim"))
+                .build()
+        ).addClickAction(p -> {
+                    if (p.hasPermission("ticket.claim")) {
+                        ticket.setAssignee(p);
 
-        ItemStack assignee = new ItemStack(Material.LEATHER_HELMET);
-        ItemMeta assigneeMeta = assignee.getItemMeta();
-        assigneeMeta.setDisplayName(StringUtils.color("&c&lAssigned To"));
-        assigneeMeta.setLore(Objects.isNull(ticket.getAssignedName())
-                ? Arrays.asList(StringUtils.color("&fThere is no one assigned to this ticket!"),
-                player.hasPermission("ticket.claim") ? StringUtils.color("&fClick me to assign yourself!")
-                        : "")
-                : Collections.singletonList(StringUtils.color("&fThe ticket has been assigned to: &c" + ticket.getAssignedName())));
-        assignee.setItemMeta(assigneeMeta);
+                        HashMap<String, Object> newMap = new HashMap<>();
+                        newMap.put("assigneeName", p.getName());
+                        newMap.put("assigneeUUID", p.getUniqueId());
+                        newMap.put("status", 1);
 
-        Icon assigneeIcon = new Icon(assignee).addClickAction(p -> {
-            if (!p.hasPermission("ticket.claim")) return;
+                        plugin.getStorageManager().updateTicket(ticket.getID(), newMap);
 
-            ticket.setAssignee(p);
-            p.closeInventory();
+                        p.closeInventory();
 
-            this.openTicketInventory(p, ticket);
+                        this.openTicketInventory(p, ticket);
 
-            if (ticket.isPlayerOnline()) {
-                Objects.requireNonNull(Bukkit.getPlayer(ticket.getPlayerUUID())).sendMessage(StringUtils.color("&7[&cTicket&7] &f" + p.getName() + " has been assigned to your ticket!"));
-            }
+                        if (ticket.isPlayerOnline()) {
+                            Objects.requireNonNull(Bukkit.getPlayer(ticket.getPlayerUUID()))
+                                    .sendMessage(StringUtils.color("&7[&cTicket&7] &f" + p.getName() + " has been assigned to your ticket!"));
+                        }
+                    }
         });
 
         /* Sun Dial [ Date ] */
 
-        ItemStack date = new ItemStack(Material.ITEM_FRAME);
-        ItemMeta dateMeta = date.getItemMeta();
-        dateMeta.setDisplayName(StringUtils.color("&c&lTime Created"));
-        dateMeta.setLore(Collections.singletonList(StringUtils.color("&fThe ticket was issued on: " + ticket.getCreationDate())));
-        date.setItemMeta(dateMeta);
-
-        Icon dateIcon = new Icon(date);
+        Icon dateIcon = new Icon(
+            new ItemManager(Material.ITEM_FRAME, 1)
+                .setDisplayName("&c&lTime Created")
+                .addLoreLine("&fThe ticket was issued on: &c" + ticket.getCreationDate() + "&f!")
+        .build());
 
         /* Sign [ Ticket Message ] */
 
-        ItemStack message = new ItemStack(Material.BOOK);
-        ItemMeta messageMeta = message.getItemMeta();
-        messageMeta.setDisplayName(StringUtils.color("&c&lTicket Message"));
-        messageMeta.setLore(Collections.singletonList(StringUtils.color("&f" + ticket.getIssuedMessage())));
-        message.setItemMeta(messageMeta);
+        Icon messageIcon = new Icon(
+            new ItemManager(Material.BOOK, 1)
+                .setDisplayName("&c&lTicket Message")
+                .addLoreLine("&f" + ticket.getIssuedMessage())
+        .build());
 
-        Icon messageIcon = new Icon(message);
+        /* Exit Inventory Button*/
 
-        /* Close Inventory Button*/
+        Icon exitIcon = new Icon(
+            new ItemManager(Material.BARRIER, 1)
+                .setDisplayName("&c&lExit")
+                .addLoreLine("&fClose the ticket inventory.")
+            .build()
+        ).addClickAction(Player::closeInventory);
 
-        ItemStack exit = new ItemStack(Material.BARRIER);
-        ItemMeta exitMeta = exit.getItemMeta();
-        exitMeta.setDisplayName(StringUtils.color("&c&lExit"));
-        exit.setItemMeta(exitMeta);
+        /* Close Ticket Button */
 
-        Icon exitIcon = new Icon(exit).addClickAction(Player::closeInventory);
-
-        /* Close Inventory Button*/
-
-        ItemStack close = new ItemStack(Material.ANVIL);
-        ItemMeta closeMeta = close.getItemMeta();
-        closeMeta.setDisplayName(StringUtils.color("&c&lClose Ticket"));
-        closeMeta.setLore(Collections.singletonList(StringUtils.color("&fClick me to close the ticket!")));
-        close.setItemMeta(closeMeta);
-
-        Icon closeIcon = new Icon(close).addClickAction(p -> verifyDeleteInventory(p, ticket));
+        Icon closeIcon = new Icon(
+            new ItemManager(Material.ANVIL, 1)
+                .setDisplayName("&c&lClose Ticket")
+                .addLoreLine("&fA staff member can close your ticket here!")
+                .addLoreLine("&fClick me to close the ticket!", player, Arrays.asList("ticket.close", "ticket.close.self"))
+                .build()
+        ).addClickAction(p -> {
+            if (p.hasPermission("ticket.close") ||
+                    ticket.getPlayerUUID().equals(player.getUniqueId())
+                            && player.hasPermission("ticket.close.self")) {
+                verifyDeleteInventory(p, ticket);
+            }
+        });
 
         /* Current Ticket Status */
 
-        ItemStack statusChange = new ItemStack(Material.NAME_TAG);
-        ItemMeta statusChangeMeta = statusChange.getItemMeta();
-        statusChangeMeta.setDisplayName(StringUtils.color("&c&lCurrent Ticket Status"));
-        statusChangeMeta.setLore(Collections.singletonList(StringUtils.color("&fThe status of the ticket is: &c" + ticket.getCurrentStatus() + "&f!")));
-        statusChange.setItemMeta(statusChangeMeta);
-
-        Icon statusIcon = new Icon(statusChange);
+        Icon statusIcon = new Icon(
+            new ItemManager(Material.NAME_TAG, 1)
+                .setDisplayName("&c&lCurrent Ticket Status")
+                .addLoreLine("&fThe status of the ticket is: &c" + ticket.getTextStatus() + "&f!")
+        .build());
 
         /* Custom Holder Creation */
 
-        CustomHolder customHolder = new CustomHolder(45, StringUtils.color("&cViewing " + ticket.getPlayerName() + "'s Ticket"));
+        CustomHolder customHolder = new CustomHolder(54, StringUtils.color("&fViewing &c" + ticket.getPlayerName() + "&f's Ticket"));
 
         customHolder.setIcon(4, messageIcon);
-        customHolder.setIcon(19, teleportIcon);
+        customHolder.setIcon(19, locationIcon);
         customHolder.setIcon(21, assigneeIcon);
         customHolder.setIcon(23, commentsIcon);
         customHolder.setIcon(25, dateIcon);
@@ -335,20 +300,19 @@ public class TicketManager {
      * @param player the player to open the inventory
      * @param ticket the ticket which is being verified to close.
      */
-    private void verifyDeleteInventory(Player player, Ticket ticket){
+    private void verifyDeleteInventory(Player player, Ticket ticket) {
 
-        ItemStack confirm = new ItemStack(Material.EMERALD);
-        ItemMeta confirmMeta = confirm.getItemMeta();
-        confirmMeta.setDisplayName(StringUtils.color("&c&lConfirm"));
-        confirm.setItemMeta(confirmMeta);
+        Icon confirmIcon = new Icon(
+            new ItemManager(Material.EMERALD, 1)
+                .setDisplayName("&c&lConfirm")
+                .addLoreLine("&fClick to permanently close the ticket.")
+            .build()
+        ).addClickAction(p -> {
+            p.closeInventory();
 
-        Icon confirmIcon = new Icon(confirm).addClickAction(pl -> {
+            if (ticket.getPlayerUUID().equals(p.getUniqueId())) {
 
-            pl.closeInventory();
-
-            if (ticket.getPlayerUUID().equals(pl.getUniqueId())) {
-
-                pl.sendMessage(StringUtils.color("&7[&cTicket&7] &fYou've closed your own ticket!"));
+                p.sendMessage(StringUtils.color("&7[&cTicket&7] &fYou've successfully closed your ticket!"));
 
                 deleteTicket(ticket, true);
 
@@ -356,36 +320,41 @@ public class TicketManager {
 
             } else {
 
+                deleteTicket(ticket, false);
+
+                plugin.getStorageManager().updateTicket(ticket.getID(), new HashMap<String, Object>() {{
+                    put("status", 1);
+                }});
+
                 Bukkit.getServer().getPluginManager().callEvent(new TicketUpdateEvent(ticket, UpdateType.DELETED));
 
-                ticket.addComment("Ticket closed by: " + player.getName());
-
-                ticket.setCurrentStatus(2);
+                this.addComment(ticket, "Ticket closed by: " + player.getName(), true);
 
             }
-
         });
 
-        ItemStack deny = new ItemStack(Material.BARRIER);
-        ItemMeta denyMeta = deny.getItemMeta();
-        denyMeta.setDisplayName(StringUtils.color("&c&lCancel"));
-        deny.setItemMeta(denyMeta);
-
-        Icon denyIcon = new Icon(deny).addClickAction(p -> {
-
+        Icon declineIcon = new Icon(
+            new ItemManager(Material.BARRIER, 1)
+                .setDisplayName("&c&lCancel")
+                .addLoreLine("&fClick to return to the ticket menu.")
+            .build()
+        ).addClickAction(p -> {
             p.closeInventory();
-
             this.openTicketInventory(p, ticket);
-
         });
 
         CustomHolder customHolder = new CustomHolder(9, StringUtils.color("&cAre you sure?"));
+
+        customHolder.setIcon(3, declineIcon);
         customHolder.setIcon(5, confirmIcon);
-        customHolder.setIcon(3, denyIcon);
 
         player.openInventory(customHolder.getInventory());
     }
 
+    /**
+     * Get the list of the ticket cache.
+     * @return ticketcache if not null
+     */
     public List<Ticket> getTicketCache() {
         return ticketCache;
     }

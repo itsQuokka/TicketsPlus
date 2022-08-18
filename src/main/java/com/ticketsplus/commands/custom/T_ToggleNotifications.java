@@ -32,17 +32,17 @@ public class T_ToggleNotifications extends CommandExecutor {
 
             player.sendMessage(StringUtils.color("&7[&cTicket&7] &fYou've turned ticket notifications on!"));
 
-            plugin.getPlayerManager().add(player);
+            plugin.getPlayerManager().remove(player);
 
         } else if (args[1].equalsIgnoreCase("off")) {
 
             player.sendMessage(StringUtils.color("&7[&cTicket&7] &fYou've turned ticket notifications off"));
 
-            plugin.getPlayerManager().remove(player);
+            plugin.getPlayerManager().add(player);
 
         } else {
 
+            player.sendMessage(StringUtils.color("&7[&cTicket&7] &fPlease specify &con &for &coff&f!"));
         }
-
     }
 }

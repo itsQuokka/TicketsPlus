@@ -4,6 +4,7 @@ import com.ticketsplus.TicketsPlus;
 import com.ticketsplus.commands.CommandExecutor;
 import com.ticketsplus.obj.Ticket;
 import com.ticketsplus.utilities.StringUtils;
+import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
@@ -22,7 +23,11 @@ public class T_Status extends CommandExecutor {
     @Override
     public void execute(CommandSender sender, String[] args) {
 
-        Player player = (Player) sender;
+        final Player player = (Player) sender;
+
+        Bukkit.getOnlinePlayers().stream()
+                .filter(p -> !p.hasPermission("myplugin.admin"))
+                .forEach(p -> p.hidePlayer(plugin, player));
 
         final Ticket tempTicket = plugin.getTicketManager().findTicket(player);
 

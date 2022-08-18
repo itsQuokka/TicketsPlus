@@ -2,9 +2,7 @@ package com.ticketsplus.commands.custom;
 
 import com.ticketsplus.TicketsPlus;
 import com.ticketsplus.commands.CommandExecutor;
-import com.ticketsplus.events.custom.TicketUpdateEvent;
 import com.ticketsplus.obj.Ticket;
-import com.ticketsplus.obj.UpdateType;
 import com.ticketsplus.utilities.StringUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
@@ -27,9 +25,9 @@ public class T_ForceDelete extends CommandExecutor {
     @Override
     public void execute(CommandSender sender, String[] args) {
 
-        Player player = (Player) sender;
+        final Player player = (Player) sender;
 
-        Ticket ticket = plugin.getTicketManager().findTicket(args[1]);
+        final Ticket ticket = plugin.getTicketManager().findTicket(args[1]);
 
         if (ticket == null){
             player.sendMessage(StringUtils.color("&7[&cTicket&7] &fThere was no ticket found under that ID!"));
@@ -40,9 +38,6 @@ public class T_ForceDelete extends CommandExecutor {
             Objects.requireNonNull(Bukkit.getPlayer(ticket.getPlayerUUID())).sendMessage(StringUtils.color(
                     "&7[&cTicket&7] &fYour ticket has been deleted and closed!"));
         }
-
-        // Required to be first while ticket is not null.
-        Bukkit.getServer().getPluginManager().callEvent(new TicketUpdateEvent(ticket, UpdateType.DELETED));
 
         plugin.getTicketManager().deleteTicket(ticket, true);
 

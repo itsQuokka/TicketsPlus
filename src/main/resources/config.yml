@@ -1,4 +1,8 @@
-# How many minutes inbetween local storage to database transfers.
-cache-to-database-minutes: 5
-# How many days until database removes a closed ticket.
-database-clearance: 1
+# If a ticket is closed, should the file be permanently removed?
+delete-on-close: false
+# If you are using a database.
+database-storage: false
+# How many hours until all closed tickets are removed from respective storage. (Database/Files)
+ticket-clearance: 1
+# How many minutes in between local storage to database transfers.
+cache-to-database-minutes: 20

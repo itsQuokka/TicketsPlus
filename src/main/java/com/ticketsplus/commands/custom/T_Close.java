@@ -27,16 +27,16 @@ public class T_Close extends CommandExecutor {
     @Override
     public void execute(CommandSender sender, String[] args) {
 
-        Player player = (Player) sender;
+        final Player player = (Player) sender;
 
-        Ticket ticket = plugin.getTicketManager().findTicket(args[1]);
+        final Ticket ticket = plugin.getTicketManager().findTicket(args[1]);
 
         if (ticket == null){
             player.sendMessage(StringUtils.color("&7[&cTicket&7] &fThere was no ticket found under that ID!"));
             return;
         }
 
-        if (ticket.getCurrentStatus().equalsIgnoreCase("closed")) {
+        if (ticket.getIntStatus() == 2) {
             player.sendMessage(StringUtils.color("&7[&cTicket&7] &fThat ticket seems to already have been closed!"));
             return;
         }
@@ -55,12 +55,11 @@ public class T_Close extends CommandExecutor {
                     "&7[&cTicket&7] &fYour ticket has been closed by &c"  + player.getName() + "&f!"));
         }
 
-        // Required to be first in order to process correct ticket event.
         ticket.setCurrentStatus(2);
 
         Bukkit.getServer().getPluginManager().callEvent(new TicketUpdateEvent(ticket, UpdateType.CLOSED));
 
-        ticket.addStaffNote(StringUtils.color("&f" + ticket.getDate() + " - &c" + player.getName() + "&f closed the ticket."));
+        plugin.getTicketManager().addComment(ticket, StringUtils.color("&f" + ticket.getDate() + " - &c" + player.getName() + "&f closed the ticket."), true);
 
         player.sendMessage(StringUtils.color("&7[&cTicket&7] &fYou've closed &c" + ticket.getPlayerName() + "&f's ticket!"));
 

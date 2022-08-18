@@ -16,13 +16,13 @@ public class T_Info extends CommandExecutor {
         this.setCommand("info");
         this.setPermission("ticket.info");
         this.setLength(2);
-        this.setUsage("/ticket info <ID>");
+        this.setUsage("/ticket info <id>");
     }
 
     @Override
     public void execute(CommandSender sender, String[] args) {
 
-        Player player = (Player) sender;
+        final Player player = (Player) sender;
 
         if (args.length <= 0){
             player.sendMessage(StringUtils.color("&7[&cTicket&7] &fYou need to specify an ID to lookup!"));
